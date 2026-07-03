@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/proxy/mobilibus/(.*)",
-      "destination": "https://mobilibus.com/$1"
+      "source": "/proxy/mobilibus/:path*",
+      "destination": "https://mobilibus.com/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
