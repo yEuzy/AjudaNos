@@ -1,0 +1,410 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-color: #0f172a;
+  --surface-color: #1e293b;
+  --surface-color-hover: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent-color: #f59e0b; /* Amber/Yellow for Bus theme */
+  --accent-color-hover: #d97706;
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --border-color: #334155;
+  --shadow-color: rgba(0, 0, 0, 0.25);
+  
+  --font-family: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 1.5rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-content {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-container h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(to right, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color);
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: monospace;
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  background: var(--surface-color);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.main-content {
+  flex: 1;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  position: relative;
+}
+
+.status-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(245, 158, 11, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--accent-color);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-card {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: var(--error-color);
+}
+
+.cache-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.directions-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.card {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px var(--shadow-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px var(--shadow-color);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.status-badge.active {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.inactive {
+  background-color: rgba(148, 163, 184, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.trips-section h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.shift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.shift-item {
+  background-color: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.trip-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+.trip-time strong {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.trip-time svg {
+  color: var(--accent-color);
+}
+
+.empty-state {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 1rem 0;
+  font-style: italic;
+}
+
+.btn-retry, .btn-fab {
+  background-color: var(--accent-color);
+  color: #fff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-retry:hover, .btn-fab:hover {
+  background-color: var(--accent-color-hover);
+}
+
+.btn-fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+  border-radius: 999px;
+  z-index: 100;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================
+   MAPA GPS
+   ========================= */
+.map-wrapper {
+  margin-bottom: 2rem;
+  padding: 0;
+  overflow: hidden;
+}
+
+.map-header {
+  padding: 1rem 1.5rem;
+  background-color: rgba(15, 23, 42, 0.8);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.map-header h3 {
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.live-pulse {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.map-container {
+  height: 350px;
+  width: 100%;
+}
+
+.custom-bus-marker {
+  transition: transform 1s linear; /* Smooth movement between polling */
+}
+
+/* Fix Leaflet z-index inside our UI */
+.leaflet-container {
+  z-index: 1;
+}
+
+.dark-popup .leaflet-popup-content-wrapper,
+.dark-popup .leaflet-popup-tip {
+  background-color: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+/* =========================
+   MEU PONTO
+   ========================= */
+.mystop-card {
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--accent-color);
+}
+
+.mystop-address {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.mystop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mystop-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: rgba(15, 23, 42, 0.5);
+  border-left: 4px solid transparent;
+}
+
+.red-route {
+  border-left-color: #ef4444; /* Vermelho (Novo Mundo) */
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);
+}
+
+.blue-route {
+  border-left-color: #3b82f6; /* Azul (Umuarama) */
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0.5) 100%);
+}
+
+.mystop-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mystop-info strong {
+  font-size: 1.25rem;
+  font-family: monospace;
+}
+
+.mystop-delay {
+  font-size: 0.8rem;
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
