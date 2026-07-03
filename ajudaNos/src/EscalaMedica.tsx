@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import './index.css';
 
 // =========================
@@ -18,6 +18,9 @@ const SearchIcon = () => (
 );
 const CheckIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+);
+const AlertIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
 );
 
 // =========================
@@ -60,6 +63,8 @@ export function processarEscalas(
 
   let escalasLimpas = escalasBrutas.map(escala => {
     const medicosSeguros = escala.medicos || [];
+    
+    // Filtra para manter APENAS os médicos desejados no turno
     const medicosFiltrados = nomesPermitidosNorm.length > 0 
       ? medicosSeguros.filter(m => nomesPermitidosNorm.includes(normalizarNome(m.nome)))
       : medicosSeguros;
@@ -85,46 +90,58 @@ export function processarEscalas(
   return { today, future };
 }
 
-// =========================
-// MOCK DATA
-// =========================
-const getTodayString = () => {
-  const d = new Date();
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
-};
-const getTomorrowString = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
-};
-
-const mockData: TurnoEscala[] = [
-  {
-    dtEscalaMedica: getTodayString(),
-    nmTurno: "MATUTINO",
-    horario: "07:00 às 13:00",
-    medicos: [{ nome: "SAMIR UZIEL", especialidade: "CLÍNICA MÉDICA" }]
-  },
-  {
-    dtEscalaMedica: getTodayString(),
-    nmTurno: "NOTURNO",
-    horario: "19:00 às 07:00",
-    medicos: [{ nome: "SAMIRA UZIEL", especialidade: "PEDIATRIA" }]
-  },
-  {
-    dtEscalaMedica: getTomorrowString(),
-    nmTurno: "VESPERTINO",
-    horario: "13:00 às 19:00",
-    medicos: [{ nome: "SAMIR UZIEL", especialidade: "CLÍNICA MÉDICA" }, { nome: "OUTRO MEDICO", especialidade: "CIRURGIA" }]
-  }
-];
-
 export default function EscalaMedica() {
-  const [dataAtual, setDataAtual] = useState(new Date().toISOString().split('T')[0]);
+  const dLocal = new Date();
+  const localYYYYMMDD = `${dLocal.getFullYear()}-${String(dLocal.getMonth()+1).padStart(2, '0')}-${String(dLocal.getDate()).padStart(2, '0')}`;
+  
+  const [dataAtual, setDataAtual] = useState(localYYYYMMDD);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [todayData, setTodayData] = useState<TurnoEscala[]>([]);
+  const [futureData, setFutureData] = useState<TurnoEscala[]>([]);
+  
   const allowedMedicos = ["SAMIR UZIEL", "SAMIRA UZIEL"];
 
-  const { today, future } = useMemo(() => {
-    return processarEscalas(mockData, dataAtual, allowedMedicos);
+  // Função para converter YYYY-MM-DD para DD/MM/YYYY para a API
+  const converterDataParaAPI = (dataStr: string) => {
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
+  };
+
+  useEffect(() => {
+    const fetchEscala = async () => {
+      setLoading(true);
+      setError(null);
+      
+      const dataFormatada = converterDataParaAPI(dataAtual);
+      // Rota com Proxy configurada no vite.config.ts e vercel.json
+      const url = `/proxy/escalamedica/escalamedica/consulta-escalas-medicas/buscar-escalas-medicas-consulta?dtEscalaMedica=${dataFormatada}&cdUnidSaude=20`;
+      
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Erro na API (${res.status})`);
+        }
+        
+        const json: TurnoEscala[] = await res.json();
+        
+        // Processa os dados reais da API usando nossa função robusta
+        const { today, future } = processarEscalas(json, dataAtual, allowedMedicos);
+        
+        setTodayData(today);
+        setFutureData(future);
+      } catch (err: any) {
+        console.error("Erro ao buscar Escala:", err);
+        setError("Não foi possível conectar à fonte de dados da Prefeitura.");
+        setTodayData([]);
+        setFutureData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEscala();
   }, [dataAtual]);
 
   const renderTurno = (t: TurnoEscala, idx: number) => (
@@ -162,7 +179,7 @@ export default function EscalaMedica() {
         <div className="header-content flex-between">
           <div className="logo-container">
             <span className="icon"><SearchIcon /></span>
-            <h1>Escala Médica (Mock)</h1>
+            <h1>Escala Médica (Oficial)</h1>
           </div>
           <div className="time-display" style={{ padding: "0" }}>
             <input 
@@ -178,25 +195,44 @@ export default function EscalaMedica() {
       <main className="main-content">
         <div className="cache-warning">
           <SearchIcon />
-          <span>Filtro Ativo: Exibindo apenas turnos de {allowedMedicos.join(" e ")}. (Dados Simulados)</span>
+          <span>Filtro Ativo: Exibindo apenas turnos de {allowedMedicos.join(" e ")}. (API Em Tempo Real - UAI Novo Mundo)</span>
         </div>
 
-        <h2 style={{marginTop: "2rem", marginBottom: "1rem"}}>Plantões de Hoje</h2>
-        {today.length > 0 ? (
-          <div className="directions-container">
-            {today.map(renderTurno)}
+        {error && (
+          <div className="status-container error-card" style={{ marginTop: '2rem' }}>
+            <AlertIcon />
+            <h2>Falha na Conexão</h2>
+            <p>{error}</p>
           </div>
-        ) : (
-          <p className="empty-state">Nenhum plantão localizado para hoje.</p>
         )}
 
-        <h2 style={{marginTop: "3rem", marginBottom: "1rem"}}>Próximos Plantões</h2>
-        {future.length > 0 ? (
-          <div className="directions-container">
-            {future.map(renderTurno)}
+        {loading ? (
+          <div className="status-container">
+            <div className="spinner"></div>
+            <p>Buscando escalas da prefeitura...</p>
           </div>
         ) : (
-          <p className="empty-state">Nenhum plantão futuro localizado.</p>
+          !error && (
+            <>
+              <h2 style={{marginTop: "2rem", marginBottom: "1rem"}}>Plantões de Hoje</h2>
+              {todayData.length > 0 ? (
+                <div className="directions-container">
+                  {todayData.map(renderTurno)}
+                </div>
+              ) : (
+                <p className="empty-state">Nenhum plantão localizado para hoje.</p>
+              )}
+
+              <h2 style={{marginTop: "3rem", marginBottom: "1rem"}}>Próximos Plantões</h2>
+              {futureData.length > 0 ? (
+                <div className="directions-container">
+                  {futureData.map(renderTurno)}
+                </div>
+              ) : (
+                <p className="empty-state">Nenhum plantão futuro localizado.</p>
+              )}
+            </>
+          )
         )}
       </main>
     </div>

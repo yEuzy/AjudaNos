@@ -5,6 +5,10 @@
       "destination": "https://mobilibus.com/:path*"
     },
     {
+      "source": "/proxy/escalamedica/:path*",
+      "destination": "https://escalamedica.uberlandia.mg.gov.br/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

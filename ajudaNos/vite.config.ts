@@ -10,6 +10,12 @@ export default defineConfig({
         target: 'https://mobilibus.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/proxy\/mobilibus/, ''),
+      },
+      '/proxy/escalamedica': {
+        target: 'https://escalamedica.uberlandia.mg.gov.br',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/proxy\/escalamedica/, ''),
       }
     }
   }
