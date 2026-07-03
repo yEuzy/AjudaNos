@@ -6,10 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/mobilibus': {
+      '/proxy/mobilibus': {
         target: 'https://mobilibus.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/mobilibus/, ''),
+        rewrite: (path) => path.replace(/^\/proxy\/mobilibus/, ''),
       }
     }
   }

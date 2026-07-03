@@ -4,8 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './index.css';
 
-const API_TIMETABLE = "/api/mobilibus/api/timetable?origin=web&v=2&project_id=166&route_id=1010841";
-const API_VEHICLES = "/api/mobilibus/api/vehicles?origin=web&trip_id=7548523&route_id=1010841";
+const API_TIMETABLE = "/proxy/mobilibus/api/timetable?origin=web&v=2&project_id=166&route_id=1010841";
+const API_VEHICLES = "/proxy/mobilibus/api/vehicles?origin=web&trip_id=7548523&route_id=1010841";
 
 // =========================
 // TIME HELPERS
@@ -82,7 +82,7 @@ export default function BusTracker() {
   const fetchStopDepartures = async () => {
     try {
       // Removemos o filtro de route_id da URL para pegar todas as linhas!
-      const res = await fetch("/api/mobilibus/api/departures?origin=web&stop_id=32705124");
+      const res = await fetch("/proxy/mobilibus/api/departures?origin=web&stop_id=32705124");
       if (!res.ok) return;
       const data = await res.json();
       
