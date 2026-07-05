@@ -52,8 +52,8 @@ const PauseIcon = () => (
 const createBusMarker = (heading: number) => {
   return L.divIcon({
     className: 'custom-bus-marker',
-    html: `<div style="transform: rotate(${heading}deg); width: 32px; height: 32px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 2px solid white;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-navigation"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+    html: `<div style="transform: rotate(${heading}deg); width: 32px; height: 32px; background: #EFC890; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 2px solid #2C294F;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2C294F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-navigation"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
     </div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
@@ -81,23 +81,20 @@ export default function BusTracker() {
   // Fetch Meu Ponto (stop_id 32705124)
   const fetchStopDepartures = async () => {
     try {
-      // Removemos o filtro de route_id da URL para pegar todas as linhas!
       const res = await fetch("/proxy/mobilibus/api/departures?origin=web&stop_id=32705124");
       if (!res.ok) return;
       const data = await res.json();
       
-      // Juntar e ordenar horários de TODAS as linhas
       const upcoming = data.trips.flatMap((t: any) => 
         t.departures.map((d: any) => ({
           time: d.time,
-          linha: t.shortName, // Ex: A230, I266
-          direction: t.headsign, // Destino real (Ex: T. UMUARAMA)
-          directionId: t.directionId, // Usado para pintar de azul/vermelho
+          linha: t.shortName,
+          direction: t.headsign,
+          directionId: t.directionId,
           delay: d.delay || 0
         }))
       ).sort((a: any, b: any) => toMinutes(a.time) - toMinutes(b.time));
 
-      // Pegar apenas os próximos no relógio (aumentei para os próximos 8 para caber mais linhas)
       const atual = nowMinutes();
       const proximos = upcoming.filter((u: any) => toMinutes(u.time) >= atual).slice(0, 8);
 
@@ -193,7 +190,7 @@ export default function BusTracker() {
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="status-container">
+        <div className="status-card">
           <div className="spinner"></div>
           <p>Buscando horários da linha I266...</p>
         </div>
@@ -202,106 +199,127 @@ export default function BusTracker() {
 
     if (error) {
       return (
-        <div className="status-container error-card">
+        <div className="status-card error">
           <AlertIcon />
-          <h2>Falha na Conexão</h2>
           <p>{error}</p>
-          <button className="btn-retry" onClick={fetchTimetable}>Tentar Novamente</button>
+          <button className="accent-btn" onClick={fetchTimetable} style={{marginLeft: "auto"}}>Tentar Novamente</button>
         </div>
       );
     }
 
     if (!data || !data.directions) {
-      return <div className="status-container"><p>Nenhum dado disponível.</p></div>;
+      return <div className="status-card"><p>Nenhum dado disponível.</p></div>;
     }
 
     const atual = nowMinutes();
 
     return (
-      <div className="directions-container">
+      <>
         {data.directions.map((dir: any, idx: number) => {
           const trips = dir.trips || [];
-          const proximos = trips.filter((t: any) => toMinutes(t.departure) >= atual).slice(0, 5);
+          const proximos = trips.filter((t: any) => toMinutes(t.departure) >= atual).slice(0, 3);
           const emRota = trips.some((t: any) => atual >= toMinutes(t.departure) && atual <= toMinutes(t.arrival));
 
           return (
-            <div key={idx} className="card direction-card">
-              <div className="card-header">
-                <span className="icon"><MapPinIcon /></span>
-                <h2>{dir.name}</h2>
-              </div>
-              
-              <div className={`status-badge ${emRota ? 'active' : 'inactive'}`}>
-                {emRota ? <><ActivityIcon /> Ônibus em Rota Agora</> : <><PauseIcon /> Aguardando Início</>}
+            <div key={idx} style={{marginBottom: "24px"}}>
+              <div className="section-title">
+                <span>{dir.name.split('(')[0].trim()}</span>
+                <span style={{color: emRota ? 'var(--accent)' : 'var(--text-secondary)'}}>
+                   {emRota ? 'Ônibus em Rota' : 'Aguardando'}
+                </span>
               </div>
 
-              <div className="trips-section">
-                <h3>Próximos Horários (Previsão)</h3>
+              <div className="main-card">
                 {proximos.length > 0 ? (
-                  <div className="shift-list">
-                    {proximos.map((t: any, i: number) => (
-                      <div key={i} className="shift-item trip-item">
-                        <div className="trip-time">
-                          <ClockIcon />
-                          <span><strong>Saída:</strong> {t.departure}</span>
-                        </div>
-                        <div className="trip-time">
-                          <MapPinIcon />
-                          <span><strong>Chegada prevista:</strong> {t.arrival}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  proximos.map((t: any, i: number) => (
+                    <div key={i} className="list-item">
+                       <div className="item-left">
+                         <div className="item-icon">
+                           <BusIcon />
+                         </div>
+                         <div className="item-info">
+                           <h3>{t.departure}</h3>
+                           <p>Saída Terminal</p>
+                         </div>
+                       </div>
+                       <div className="item-right">
+                         <div className="item-badge">{t.arrival} (Previsão)</div>
+                       </div>
+                    </div>
+                  ))
                 ) : (
-                  <p className="empty-state">Nenhum ônibus previsto para o resto do dia.</p>
+                  <p style={{color: "var(--text-secondary)", fontSize: "0.9rem", textAlign: "center"}}>Nenhum ônibus previsto.</p>
                 )}
               </div>
             </div>
           );
         })}
-      </div>
+      </>
     );
   };
 
   return (
     <div className="app-container">
       <header className="header">
-        <div className="header-content flex-between">
-          <div className="logo-container">
-            <span className="icon"><BusIcon /></span>
-            <h1>Bus Tracker I266 (Híbrido)</h1>
+        <div className="header-top">
+          <div>
+            <h1>Mobilidade</h1>
+            <p>I266 - Ao Vivo</p>
           </div>
-          <div className="time-display">
+          <div className="avatar-placeholder">
             <ClockIcon />
-            <span>{currentTime}</span>
           </div>
         </div>
       </header>
 
+      {/* ACCENT CARD (O meu ponto principal) */}
+      <div className="accent-card">
+        <div className="vertical-widget">
+          <div className="widget-avatar active"><MapPinIcon /></div>
+        </div>
+        
+        <h2>Meu Ponto</h2>
+        <div className="value" style={{fontSize: "1.2rem", marginBottom: "8px"}}>{myStop ? myStop.stopName : 'Buscando...'}</div>
+        
+        {myStop && myStop.departures.length > 0 && (
+           <div style={{marginTop: "16px"}}>
+             <div style={{fontSize: "0.9rem", opacity: 0.8, marginBottom: "4px"}}>Próximo Ônibus</div>
+             <div style={{fontSize: "1.8rem", fontWeight: "bold"}}>
+               {myStop.departures[0].time}
+               <span style={{fontSize: "0.9rem", marginLeft: "8px", opacity: 0.8}}>linha {myStop.departures[0].linha}</span>
+             </div>
+             {myStop.departures[0].delay > 0 && (
+               <div style={{color: "#ef4444", fontWeight: "bold", fontSize: "0.8rem"}}>+{myStop.departures[0].delay}s atraso</div>
+             )}
+             
+             <div className="pill-bar-container" style={{background: "rgba(44, 41, 79, 0.2)", boxShadow: "none"}}>
+                <div className="pill-bar-fill" style={{width: "70%", background: "var(--bg-dark-element)"}}></div>
+             </div>
+           </div>
+        )}
+      </div>
+
       <main className="main-content">
         {isUsingCache && (
-          <div className="cache-warning">
+          <div className="status-card">
             <AlertIcon />
-            <span>Usando tabela offline (Cache). O mapa em tempo real pode estar desativado.</span>
+            <p>Usando tabela offline (Cache).</p>
           </div>
         )}
 
-        {/* MAPA EM TEMPO REAL */}
-        <div className="map-wrapper card">
-          <div className="map-header">
-            <h3><ActivityIcon /> GPS Tempo Real</h3>
-            <span className="live-pulse">LIVE</span>
-          </div>
-          <div className="map-container">
-            <MapContainer center={[-18.9170, -48.1964]} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%", borderRadius: "8px" }}>
+        <div className="section-title">
+          <span>GPS TEMPO REAL</span>
+        </div>
+        <div className="main-card" style={{padding: "8px"}}>
+          <div style={{ height: "200px", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+            <MapContainer center={[-18.9170, -48.1964]} zoom={13} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; OpenStreetMap'
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               />
-              
               {vehicles.map((veh, i) => (
                 <Marker key={i} position={[veh.lat, veh.lng]} icon={createBusMarker(veh.heading)}>
-                  <Popup className="dark-popup">
+                  <Popup>
                     <strong>Viatura: {veh.vehicleId}</strong><br/>
                     Horário Partida: {veh.startTime}<br/>
                     Atraso: {veh.delay}s<br/>
@@ -313,40 +331,6 @@ export default function BusTracker() {
           </div>
         </div>
 
-        {/* MEU PONTO */}
-        {myStop && (
-          <div className="card mystop-card">
-            <div className="card-header">
-              <span className="icon"><MapPinIcon /></span>
-              <h2>Meu Ponto Mais Próximo</h2>
-            </div>
-            <p className="mystop-address">{myStop.stopName}</p>
-            
-            <div className="mystop-list">
-              {myStop.departures.length > 0 ? (
-                myStop.departures.map((d: any, i: number) => {
-                  const isRedRoute = d.directionId === 0;
-                  return (
-                    <div key={i} className={`mystop-item ${isRedRoute ? 'red-route' : 'blue-route'}`}>
-                      <div className="mystop-info">
-                        <span className="line-badge" style={{ backgroundColor: isRedRoute ? '#ef4444' : '#3b82f6', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                          {d.linha}
-                        </span>
-                        <strong>{d.time}</strong>
-                        <span>Destino: {d.direction}</span>
-                      </div>
-                      {d.delay > 0 && <span className="mystop-delay">+{d.delay}s atraso</span>}
-                    </div>
-                  );
-                })
-              ) : (
-                <p>Nenhum ônibus passará neste ponto hoje.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TIMETABLE PREVISÃO */}
         {renderContent()}
 
       </main>

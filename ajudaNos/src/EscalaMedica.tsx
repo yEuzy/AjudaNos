@@ -13,12 +13,6 @@ const CalendarIcon = () => (
 const ClockIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
-const SearchIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-);
-const CheckIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-);
 const AlertIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
 );
@@ -33,6 +27,7 @@ export interface Medico {
 
 export interface TurnoEscala {
   dtEscalaMedica: string;
+  dtEscalaMedicaFormatada?: string;
   horario: string;
   nmTurno: string;
   medicos: Medico[];
@@ -103,7 +98,14 @@ export default function EscalaMedica() {
   
   const allowedMedicos = ["SAMIR UZIEL", "SAMIRA UZIEL"];
 
-  // Função para converter YYYY-MM-DD para DD/MM/YYYY para a API
+  // Manipulação de Datas
+  const getNextDateString = (baseDateStr: string, addDays: number) => {
+    const [y, m, d] = baseDateStr.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + addDays);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const converterDataParaAPI = (dataStr: string) => {
     const [ano, mes, dia] = dataStr.split('-');
     return `${dia}/${mes}/${ano}`;
@@ -114,26 +116,29 @@ export default function EscalaMedica() {
       setLoading(true);
       setError(null);
       
-      const dataFormatada = converterDataParaAPI(dataAtual);
-      // Rota com Proxy configurada no vite.config.ts e vercel.json
-      const url = `/proxy/escalamedica/escalamedica/consulta-escalas-medicas/buscar-escalas-medicas-consulta?dtEscalaMedica=${dataFormatada}&cdUnidSaude=20`;
-      
       try {
-        const res = await fetch(url);
-        if (!res.ok) {
-          throw new Error(`Erro na API (${res.status})`);
-        }
+        // Dispara 3 consultas (Hoje, Amanhã, Depois)
+        const datasParaBuscar = [0, 1, 2].map(days => getNextDateString(dataAtual, days));
         
-        const json: TurnoEscala[] = await res.json();
+        const promessas = datasParaBuscar.map(dataStr => {
+          const dataFormatada = converterDataParaAPI(dataStr);
+          const url = `/proxy/escalamedica/escalamedica/consulta-escalas-medicas/buscar-escalas-medicas-consulta?dtEscalaMedica=${dataFormatada}&cdUnidSaude=20`;
+          return fetch(url).then(r => {
+             if (!r.ok) throw new Error("Erro na API");
+             return r.json();
+          });
+        });
+
+        const resultadosArray = await Promise.all(promessas);
+        const escalasBrutasAgrupadas = resultadosArray.flat() as TurnoEscala[];
         
-        // Processa os dados reais da API usando nossa função robusta
-        const { today, future } = processarEscalas(json, dataAtual, allowedMedicos);
+        const { today, future } = processarEscalas(escalasBrutasAgrupadas, dataAtual, allowedMedicos);
         
         setTodayData(today);
         setFutureData(future);
       } catch (err: any) {
-        console.error("Erro ao buscar Escala:", err);
-        setError("Não foi possível conectar à fonte de dados da Prefeitura.");
+        console.error("Erro ao buscar Escala (3 Dias):", err);
+        setError("Não foi possível conectar à fonte de dados.");
         setTodayData([]);
         setFutureData([]);
       } finally {
@@ -145,30 +150,20 @@ export default function EscalaMedica() {
   }, [dataAtual]);
 
   const renderTurno = (t: TurnoEscala, idx: number) => (
-    <div key={idx} className="card direction-card">
-      <div className="card-header">
-        <span className="icon"><CalendarIcon /></span>
-        <h2>{t.dtEscalaMedica} - {t.nmTurno}</h2>
-      </div>
-      <div className="status-badge active">
-        <ClockIcon /> {t.horario}
-      </div>
-      <div className="trips-section">
-        <h3>Médicos Confirmados</h3>
-        <div className="shift-list">
-          {t.medicos.map((m, i) => (
-            <div key={i} className="shift-item trip-item">
-              <div className="trip-time">
-                <UserIcon />
-                <span><strong>{m.nome}</strong></span>
-              </div>
-              <div className="trip-time" style={{color: "var(--text-secondary)"}}>
-                <CheckIcon />
-                <span>{m.especialidade}</span>
-              </div>
-            </div>
-          ))}
+    <div key={idx} className="list-item">
+      <div className="item-left">
+        <div className="item-icon">
+          <ClockIcon />
         </div>
+        <div className="item-info">
+          <h3>{t.dtEscalaMedica}</h3>
+          <p>{t.horario} - {t.nmTurno}</p>
+        </div>
+      </div>
+      <div className="item-right">
+        {t.medicos.map((m, i) => (
+           <div key={i} className="item-badge" style={{marginBottom: "4px"}}>{m.nome}</div>
+        ))}
       </div>
     </div>
   );
@@ -176,61 +171,74 @@ export default function EscalaMedica() {
   return (
     <div className="app-container">
       <header className="header">
-        <div className="header-content flex-between">
-          <div className="logo-container">
-            <span className="icon"><SearchIcon /></span>
-            <h1>Escala Médica (Oficial)</h1>
+        <div className="header-top">
+          <div>
+            <h1>Prefeitura</h1>
+            <p>Escala Médica Oficial</p>
           </div>
-          <div className="time-display" style={{ padding: "0" }}>
-            <input 
-              type="date" 
-              value={dataAtual} 
-              onChange={e => setDataAtual(e.target.value)}
-              style={{ background: "transparent", color: "white", border: "none", outline: "none", fontFamily: "inherit" }}
-            />
+          <div className="avatar-placeholder">
+            <UserIcon />
           </div>
         </div>
       </header>
 
-      <main className="main-content">
-        <div className="cache-warning">
-          <SearchIcon />
-          <span>Filtro Ativo: Exibindo apenas turnos de {allowedMedicos.join(" e ")}. (API Em Tempo Real - UAI Novo Mundo)</span>
+      <div className="accent-card">
+        <div className="vertical-widget">
+          <div className="widget-avatar active"><UserIcon /></div>
+          <div className="widget-avatar"><UserIcon /></div>
         </div>
+        
+        <h2>Buscando por</h2>
+        <div className="value">Uziel</div>
+        
+        <label className="dark-btn" style={{marginTop: "8px", width: "100%", justifyContent: "center"}}>
+          <CalendarIcon />
+          <input 
+            type="date" 
+            value={dataAtual} 
+            onChange={e => setDataAtual(e.target.value)}
+            style={{ background: "transparent", color: "var(--text-main)", border: "none", outline: "none", fontFamily: "inherit" }}
+          />
+        </label>
+      </div>
 
+      <main className="main-content">
         {error && (
-          <div className="status-container error-card" style={{ marginTop: '2rem' }}>
+          <div className="status-card error">
             <AlertIcon />
-            <h2>Falha na Conexão</h2>
             <p>{error}</p>
           </div>
         )}
 
         {loading ? (
-          <div className="status-container">
+          <div className="status-card">
             <div className="spinner"></div>
-            <p>Buscando escalas da prefeitura...</p>
+            <p>Buscando próximos 3 dias...</p>
           </div>
         ) : (
           !error && (
             <>
-              <h2 style={{marginTop: "2rem", marginBottom: "1rem"}}>Plantões de Hoje</h2>
-              {todayData.length > 0 ? (
-                <div className="directions-container">
-                  {todayData.map(renderTurno)}
-                </div>
-              ) : (
-                <p className="empty-state">Nenhum plantão localizado para hoje.</p>
-              )}
+              <div className="section-title">
+                <span>PLANTÃO DE HOJE</span>
+              </div>
+              <div className="main-card">
+                {todayData.length > 0 ? (
+                  todayData.map(renderTurno)
+                ) : (
+                  <p style={{color: "var(--text-secondary)", fontSize: "0.9rem", textAlign: "center"}}>Nenhum plantão hoje.</p>
+                )}
+              </div>
 
-              <h2 style={{marginTop: "3rem", marginBottom: "1rem"}}>Próximos Plantões</h2>
-              {futureData.length > 0 ? (
-                <div className="directions-container">
-                  {futureData.map(renderTurno)}
-                </div>
-              ) : (
-                <p className="empty-state">Nenhum plantão futuro localizado.</p>
-              )}
+              <div className="section-title">
+                <span>PRÓXIMOS PLANTÕES (+2 DIAS)</span>
+              </div>
+              <div className="main-card">
+                {futureData.length > 0 ? (
+                  futureData.map(renderTurno)
+                ) : (
+                  <p style={{color: "var(--text-secondary)", fontSize: "0.9rem", textAlign: "center"}}>Nenhum plantão futuro.</p>
+                )}
+              </div>
             </>
           )
         )}
