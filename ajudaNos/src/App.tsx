@@ -18,6 +18,10 @@ const DropletIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
 );
 
+const LogOutIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+);
+
 type UserType = 'Kallew' | 'Maria' | null;
 
 export default function App() {
@@ -33,6 +37,11 @@ export default function App() {
     setActiveScreen('water');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('ajudanos_user');
+    setCurrentUser(null);
+  };
+
   // Se não tem usuário logado, mostra o Login (que ocupa a tela toda sem Navbar)
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
@@ -40,6 +49,31 @@ export default function App() {
 
   return (
     <>
+      {/* Botão de Logout Global */}
+      <button 
+        onClick={handleLogout}
+        title="Sair"
+        style={{
+          position: 'fixed',
+          top: '24px',
+          right: '24px',
+          background: 'var(--bg-dark-element)',
+          color: '#ff8a8a',
+          border: 'none',
+          borderRadius: '50%',
+          width: '40px',
+          height: '40px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light)',
+          zIndex: 1000
+        }}
+      >
+        <LogOutIcon />
+      </button>
+
       <nav className="main-navbar">
         <button 
           className={`nav-btn ${activeScreen === 'bus' ? 'active' : ''}`}
