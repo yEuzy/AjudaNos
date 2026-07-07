@@ -1,13 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import './index.css';
 
-// SVGs
-const UserFemaleIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 0-4 4v2c0 2.2 1.8 4 4 4s4-1.8 4-4V6a4 4 0 0 0-4-4Z"/><path d="M22 22v-2a4 4 0 0 0-4-4h-2a2 2 0 0 1-2-2 3 3 0 0 0-6 0 2 2 0 0 1-2 2H4a4 4 0 0 0-4 4v2"/></svg>
-);
-
 const ScanNfcIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
     <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
     <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
@@ -21,122 +16,103 @@ interface LoginProps {
 }
 
 export default function Login({ onLogin }: LoginProps) {
-  const [nfcStatus, setNfcStatus] = useState<string>('Tocar para escanear tag NFC');
+  const [status, setStatus] = useState<string>('Iniciando sistema NFC...');
   const [isScanning, setIsScanning] = useState(false);
+  const [needsGesture, setNeedsGesture] = useState(false);
   const [supported, setSupported] = useState(true);
 
-  useEffect(() => {
+  const startNfcScan = useCallback(async () => {
     if (!('NDEFReader' in window)) {
       setSupported(false);
-      setNfcStatus('NFC não suportado');
+      setStatus('NFC não suportado neste dispositivo (recomendado: Chrome no Android).');
+      return;
     }
-  }, []);
-
-  const handleNfcLogin = async () => {
-    if (!('NDEFReader' in window)) return;
+    
     try {
-      setNfcStatus('Iniciando...');
       // @ts-ignore
       const ndef = new window.NDEFReader();
       await ndef.scan();
       setIsScanning(true);
-      setNfcStatus('Aproxime sua Tag...');
+      setNeedsGesture(false);
+      setStatus('Aproxime seu cartão ou tag na traseira do aparelho.');
       
       ndef.onreading = (event: any) => {
         const { serialNumber } = event;
+        // Dependendo da NFC faz login em contas diferentes
         if (serialNumber === '92:22:9e:dd') {
-          setNfcStatus('Sucesso!');
-          onLogin('Kallew');
+          setStatus('Autenticado com sucesso! Bem-vindo(a), Kallew.');
+          setTimeout(() => onLogin('Kallew'), 1000);
+        } else if (serialNumber === '04:88:51:ea:94:56:80') {
+          // Id para Maria
+          setStatus('Autenticado com sucesso! Bem-vindo(a), Maria.');
+          setTimeout(() => onLogin('Maria'), 1000);
         } else {
-          setNfcStatus(`Tag inválida: ${serialNumber}`);
-          setIsScanning(false);
+          setStatus(`Acesso Negado (Tag ID: ${serialNumber})`);
         }
       };
 
       ndef.onreadingerror = () => {
-        setNfcStatus('Erro de leitura.');
-        setIsScanning(false);
+        setStatus('Erro na leitura do cartão. Tente novamente.');
       };
 
     } catch (error: any) {
       setIsScanning(false);
-      setNfcStatus(`Erro: ${error.message}`);
+      // O navegador bloqueia o auto-start de funções que precisam de hardware/permissão se o usuário não interagiu com a tela primeiro.
+      if (error.name === 'NotAllowedError') {
+        setNeedsGesture(true);
+        setStatus('Toque em qualquer lugar da tela para ativar o leitor NFC.');
+      } else {
+        setStatus(`Erro: ${error.message}`);
+      }
     }
-  };
+  }, [onLogin]);
+
+  useEffect(() => {
+    startNfcScan();
+  }, [startNfcScan]);
 
   return (
-    <div className="app-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh', padding: '0 24px', paddingBottom: '0' }}>
-      
+    <div 
+      className="app-container" 
+      onClick={needsGesture ? startNfcScan : undefined}
+      style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        minHeight: '100vh', 
+        padding: '0 24px', 
+        paddingBottom: '0',
+        cursor: needsGesture ? 'pointer' : 'default',
+        userSelect: 'none'
+      }}
+    >
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '8px' }}>Bem-vindo</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Faça o login para continuar</p>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--accent)', marginBottom: '8px', letterSpacing: '1px' }}>AjudaNós</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>Login Automático via NFC</p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        
-        {/* Login Kallew via NFC */}
-        <button 
-          className="main-card" 
-          onClick={handleNfcLogin}
-          disabled={!supported || isScanning}
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '24px', 
-            margin: '0', 
-            border: 'none', 
-            color: 'var(--text-main)', 
-            cursor: supported && !isScanning ? 'pointer' : 'default',
-            textAlign: 'left',
-            userSelect: 'none',
-            transition: 'transform 0.2s',
-            opacity: supported ? 1 : 0.6
-          }}
-          onPointerDown={(e) => { if(supported && !isScanning) e.currentTarget.style.transform = 'scale(0.95)' }}
-          onPointerUp={(e) => { if(supported && !isScanning) e.currentTarget.style.transform = 'scale(1)' }}
-          onPointerLeave={(e) => { if(supported && !isScanning) e.currentTarget.style.transform = 'scale(1)' }}
-        >
-          <div className="item-icon" style={{ width: '64px', height: '64px', color: 'var(--accent)' }}>
-            {isScanning ? (
-                <div className="spinner" style={{ borderColor: 'rgba(0,0,0,0.1)', borderTopColor: 'var(--accent)', width: '24px', height: '24px' }}></div>
-            ) : (
+      <div className="main-card" style={{ width: '100%', textAlign: 'center', padding: '48px 24px', margin: '0' }}>
+        <div style={{ color: 'var(--accent)', marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+          {isScanning ? (
+              <div style={{ position: 'relative' }}>
                 <ScanNfcIcon />
-            )}
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Kallew</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{nfcStatus}</p>
-          </div>
-        </button>
-
-        {/* Login Maria */}
-        <button 
-          className="main-card" 
-          onClick={() => onLogin('Maria')}
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '24px', 
-            margin: '0', 
-            border: 'none', 
-            color: 'var(--text-main)', 
-            cursor: 'pointer',
-            textAlign: 'left',
-            userSelect: 'none',
-            transition: 'transform 0.2s',
-          }}
-          onPointerDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
-          onPointerUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          onPointerLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-        >
-          <div className="item-icon" style={{ width: '64px', height: '64px', color: '#ff9a9e' }}>
-            <UserFemaleIcon />
-          </div>
-          <div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Maria</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Acesso Manual</p>
-          </div>
-        </button>
+                <div className="spinner" style={{ position: 'absolute', top: '-10px', right: '-10px', width: '20px', height: '20px', borderColor: 'rgba(0,0,0,0.1)', borderTopColor: 'var(--accent)' }}></div>
+              </div>
+          ) : (
+              <div style={{ opacity: supported ? 1 : 0.3 }}>
+                <ScanNfcIcon />
+              </div>
+          )}
+        </div>
+        
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '16px' }}>
+          {needsGesture ? 'Ação Necessária' : (isScanning ? 'Aguardando Tag...' : 'Status')}
+        </h2>
+        
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+          {status}
+        </p>
       </div>
 
     </div>
