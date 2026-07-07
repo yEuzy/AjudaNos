@@ -42,7 +42,7 @@ export default function Login({ onLogin }: LoginProps) {
         if (serialNumber === '92:22:9e:dd') {
           setStatus('Autenticado com sucesso! Bem-vindo(a), Kallew.');
           setTimeout(() => onLogin('Kallew'), 1000);
-        } else if (serialNumber === '04:88:51:ea:94:56:80') {
+        } else if (serialNumber === 'd2:5f:04:ed') {
           // Id para Maria
           setStatus('Autenticado com sucesso! Bem-vindo(a), Maria.');
           setTimeout(() => onLogin('Maria'), 1000);
