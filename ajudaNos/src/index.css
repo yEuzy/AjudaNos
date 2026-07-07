@@ -316,25 +316,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 8px;
   border-radius: var(--radius-pill);
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 4px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   z-index: 1000;
-  width: max-content;
+  width: calc(100% - 32px);
+  max-width: 400px;
 }
 
 .nav-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  padding: 12px 24px;
+  padding: 12px 4px;
+  flex: 1;
+  justify-content: center;
   min-height: 48px; /* Área de toque gorda para dedos grandes */
   border-radius: var(--radius-pill);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.3s ease;
   user-select: none;
 }

@@ -2,7 +2,6 @@ import { useState } from 'react';
 import BusTracker from './BusTracker';
 import EscalaMedica from './EscalaMedica';
 import WaterTracker from './WaterTracker';
-import NfcTracker from './NfcTracker';
 import Login from './Login';
 import './index.css';
 
@@ -19,10 +18,6 @@ const DropletIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
 );
 
-const NfcIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2H6z"/><path d="M12 18h.01"/><path d="M8 12a4 4 0 0 1 8 0"/><path d="M10 10.5a2.5 2.5 0 0 1 4 0"/></svg>
-);
-
 type UserType = 'Kallew' | 'Maria' | null;
 
 export default function App() {
@@ -30,7 +25,7 @@ export default function App() {
     return localStorage.getItem('ajudanos_user') as UserType;
   });
   
-  const [activeScreen, setActiveScreen] = useState<'bus' | 'escala' | 'water' | 'nfc'>('water');
+  const [activeScreen, setActiveScreen] = useState<'bus' | 'escala' | 'water'>('water');
 
   const handleLogin = (user: 'Kallew' | 'Maria') => {
     localStorage.setItem('ajudanos_user', user);
@@ -69,20 +64,11 @@ export default function App() {
           <HeartPulseIcon />
           Escala
         </button>
-
-        <button 
-          className={`nav-btn ${activeScreen === 'nfc' ? 'active' : ''}`}
-          onClick={() => setActiveScreen('nfc')}
-        >
-          <NfcIcon />
-          NFC
-        </button>
       </nav>
 
       {activeScreen === 'bus' && <BusTracker />}
       {activeScreen === 'water' && <WaterTracker currentUser={currentUser} />}
       {activeScreen === 'escala' && <EscalaMedica />}
-      {activeScreen === 'nfc' && <NfcTracker />}
     </>
   );
 }
